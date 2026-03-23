@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import type { FakeProfile } from '@/lib/identity/types'
 import { countryConfigs } from '@/lib/identity/config'
+import { generateFakeProfileClient } from '@/lib/identity/generator-client'
 import Link from 'next/link'
 
 const allCountries = Object.entries(countryConfigs)
@@ -27,15 +28,13 @@ export default function Persona3Page() {
     )
   }, [search])
 
-  async function generate(code: string) {
+  function generate(code: string) {
     setLoading(true)
     setError('')
     setShowDropdown(false)
     setSearch('')
     try {
-      const res = await fetch(`/api/fake-profile?country=${code}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to generate')
+      const data = generateFakeProfileClient(code)
       setProfile(data)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')

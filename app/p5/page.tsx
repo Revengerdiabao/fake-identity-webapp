@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import type { FakeProfile } from '@/lib/identity/types'
 import { countryConfigs } from '@/lib/identity/config'
+import { generateFakeProfileClient } from '@/lib/identity/generator-client'
 import Link from 'next/link'
 
 const allCountries = Object.entries(countryConfigs)
@@ -17,51 +18,6 @@ export default function Persona5Page() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const searchWrapperRef = useRef<HTMLDivElement | null>(null)
-
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7576/ingest/81be2c35-1748-45b8-b8fb-23f50ddf47ac', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7da32d',
-      },
-      body: JSON.stringify({
-        sessionId: '7da32d',
-        runId: 'pre-fix',
-        hypothesisId: 'search-layout',
-        location: 'app/p5/page.tsx:search-state',
-        message: 'Search state changed',
-        data: { search, showDropdown },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-  }, [search, showDropdown])
-  // #endregion
-
-  // #region agent log
-  useEffect(() => {
-    if (!searchWrapperRef.current) return
-    const rect = searchWrapperRef.current.getBoundingClientRect()
-    fetch('http://127.0.0.1:7576/ingest/81be2c35-1748-45b8-b8fb-23f50ddf47ac', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Debug-Session-Id': '7da32d',
-      },
-      body: JSON.stringify({
-        sessionId: '7da32d',
-        runId: 'pre-fix',
-        hypothesisId: 'search-geometry',
-        location: 'app/p5/page.tsx:search-wrapper',
-        message: 'Search wrapper rect',
-        data: { width: rect.width, height: rect.height, top: rect.top, left: rect.left },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {})
-  }, [search, showDropdown])
-  // #endregion
 
   const filtered = useMemo(() => {
     if (!search) return allCountries
@@ -71,15 +27,13 @@ export default function Persona5Page() {
     )
   }, [search])
 
-  async function generate(code: string) {
+  function generate(code: string) {
     setLoading(true)
     setError('')
     setShowDropdown(false)
     setSearch('')
     try {
-      const res = await fetch(`/api/fake-profile?country=${code}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to generate')
+      const data = generateFakeProfileClient(code)
       setProfile(data)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unknown error')
@@ -151,7 +105,6 @@ Country: ${profile.countryName} (${profile.countryCode})`
           <div className="w-full max-w-md relative">
             <div className="absolute inset-0 bg-white" style={{ transform: 'translateX(6px) translateY(6px)' }} />
             <div
-              ref={searchWrapperRef}
               className="relative bg-black border-4 border-[#f20d0d] p-2 flex items-center"
             >
               <input
